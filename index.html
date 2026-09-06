@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>สินค้าพร้อมขายร้าน แอปเปิ้ลอาร์มเพชรบุรี</title>
+<meta name="description" content="เช็คสต็อกมือถือพร้อมขายของร้านแอปเปิ้ลอาร์ม เพชรบุรี แบบเรียลไทม์">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.115.0/dist/umd/supabase.js"></script>
+<style>
+  :root{
+    --bg:#0d0c09; --panel:#17150f; --panel-2:#1e1b13; --line:#332e21;
+    --text:#f2ece0; --muted:#8f8977; --gold:#d4af37; --gold-soft:#e8c968; --gold-dark:#8a6f1f;
+    --red:#d2564b; --green:#4caf7d;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Sukhumvit Set","Segoe UI","Helvetica Neue",sans-serif;-webkit-font-smoothing:antialiased}
+  a{color:inherit;text-decoration:none}
+  .wrap{max-width:1100px;margin:0 auto;padding:16px}
+  header{position:sticky;top:0;z-index:20;background:rgba(13,12,9,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+  .headrow{display:flex;align-items:center;gap:10px;padding:12px 16px;max-width:1100px;margin:0 auto}
+  .logo{width:38px;height:38px;border-radius:10px;background:var(--gold);display:flex;align-items:center;justify-content:center;color:#15130f;font-weight:700;font-size:14px;flex-shrink:0}
+  .shopname{font-weight:700;font-size:15px}
+  .shopsub{font-size:11.5px;color:var(--muted)}
+  .banner{padding:14px 16px 4px;font-size:13px;color:var(--gold-soft);line-height:1.6}
+  .searchbar{position:relative;margin:14px 0 12px}
+  .searchbar input{width:100%;padding:12px 14px 12px 40px;border-radius:12px;background:var(--panel-2);border:1px solid var(--line);color:var(--text);font-size:14px;outline:none}
+  .searchbar input:focus{border-color:var(--gold-dark)}
+  .searchbar .si{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--muted)}
+  .chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;margin-bottom:16px;-webkit-overflow-scrolling:touch}
+  .chip{flex-shrink:0;padding:7px 16px;border-radius:999px;font-size:12.5px;font-weight:600;border:1px solid var(--line);color:var(--muted);background:var(--panel-2);cursor:pointer;white-space:nowrap}
+  .chip.on{background:var(--gold);color:#15130f;border-color:var(--gold)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px;padding-bottom:100px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;cursor:pointer;transition:transform .15s,border-color .15s}
+  .card:hover{border-color:var(--gold-dark);transform:translateY(-2px)}
+  .card .ph{aspect-ratio:1;background:var(--panel-2);position:relative;overflow:hidden}
+  .card .ph img{width:100%;height:100%;object-fit:cover}
+  .card .noph{width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px}
+  .gradebadge{position:absolute;top:8px;left:8px;font-size:10px;padding:3px 8px;border-radius:999px;font-weight:700}
+  .gradebadge.g1{background:var(--gold);color:#15130f}
+  .gradebadge.g2{background:var(--line);color:var(--muted)}
+  .soldstamp{position:absolute;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:#fff;letter-spacing:1px}
+  .cinfo{padding:11px}
+  .cname{font-size:13px;font-weight:600;margin:0 0 3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .cmeta{font-size:11px;color:var(--muted);margin:0 0 6px}
+  .cprice{font-size:17px;font-weight:800;color:var(--gold-soft)}
+  .empty{text-align:center;padding:60px 20px;color:var(--muted)}
+  .empty .big{font-size:40px;margin-bottom:10px}
+  .loading{text-align:center;padding:60px 20px;color:var(--muted);font-size:13px}
+  .contactfab{position:fixed;left:0;right:0;bottom:0;z-index:30;padding:14px 16px calc(14px + env(safe-area-inset-bottom));background:linear-gradient(0deg,var(--bg) 60%,transparent);display:flex;justify-content:center}
+  .contactbtn{max-width:420px;width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:14px;border-radius:14px;background:var(--gold);color:#15130f;font-weight:700;font-size:14px;box-shadow:0 6px 20px rgba(212,175,55,.25);border:none;cursor:pointer}
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:50;display:none;align-items:flex-end;justify-content:center}
+  .overlay.show{display:flex}
+  .sheet{width:100%;max-width:520px;max-height:88vh;overflow-y:auto;background:var(--panel);border-radius:20px 20px 0 0;border:1px solid var(--line);border-bottom:none}
+  @media(min-width:640px){.overlay{align-items:center}.sheet{border-radius:18px;border-bottom:1px solid var(--line);max-height:85vh}}
+  .sheet-head{position:sticky;top:0;background:var(--panel);display:flex;justify-content:flex-end;padding:10px 10px 0;z-index:2}
+  .sheet-close{background:var(--panel-2);border:none;color:var(--text);width:32px;height:32px;border-radius:50%;font-size:18px;cursor:pointer}
+  .sheet-body{padding:4px 20px 24px}
+  .photoScroll{display:flex;gap:8px;overflow-x:auto;margin:0 -20px 16px;padding:0 20px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch}
+  .photoScroll img{width:82%;flex-shrink:0;aspect-ratio:1;object-fit:cover;border-radius:14px;scroll-snap-align:center;background:var(--panel-2)}
+  .detailname{font-size:19px;font-weight:700;margin:0 0 6px}
+  .detailprice{font-size:26px;font-weight:800;color:var(--gold-soft);margin:0 0 14px}
+  .detailrow{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+  .detailrow span:first-child{color:var(--muted)}
+  .qrbox{text-align:center;padding:10px 0}
+  .qrbox img{width:220px;height:220px;object-fit:cover;border-radius:14px;border:1px solid var(--line)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="headrow">
+    <div class="logo">AA</div>
+    <div>
+      <div class="shopname">สินค้าพร้อมขายร้าน แอปเปิ้ลอาร์มเพชรบุรี</div>
+      <div class="shopsub">อัปเดตจากสต็อกจริงแบบเรียลไทม์</div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div id="banner" class="banner" style="display:none"></div>
+  <div class="searchbar">
+    <span class="si">🔍</span>
+    <input id="searchInput" placeholder="ค้นหารุ่น เช่น iPhone 13" oninput="renderGrid()">
+  </div>
+  <div id="chips" class="chips"></div>
+  <div id="content"><div class="loading">กำลังโหลดสินค้า...</div></div>
+</div>
+
+<div id="contactFab" class="contactfab" style="display:none"></div>
+
+<div class="overlay" id="detailOverlay" onclick="if(event.target===this)closeDetail()">
+  <div class="sheet">
+    <div class="sheet-head"><button class="sheet-close" onclick="closeDetail()">×</button></div>
+    <div class="sheet-body" id="detailBody"></div>
+  </div>
+</div>
+
+<div class="overlay" id="qrOverlay" onclick="if(event.target===this)closeQr()">
+  <div class="sheet" style="max-width:340px">
+    <div class="sheet-head"><button class="sheet-close" onclick="closeQr()">×</button></div>
+    <div class="sheet-body qrbox">
+      <div style="font-weight:700;margin-bottom:12px">แสกน QR เพื่อติดต่อร้าน</div>
+      <img id="qrImg" src="">
+    </div>
+  </div>
+</div>
+
+<script>
+const SB_URL='https://uqfxfridchrjumulgsgn.supabase.co';
+const SB_KEY='sb_publishable_aZ1duVee5fxkMnweuxutxw_WMHs_BJv';
+const sb=window.supabase.createClient(SB_URL,SB_KEY);
+
+let allItems=[], activeCategory='', settings=null;
+
+function baht(n){return '฿'+Math.round(n||0).toLocaleString('th-TH')}
+
+async function init(){
+  const [itemsRes, settingsRes] = await Promise.all([
+    sb.from('livestock_items').select('*').eq('published',true).order('created_at',{ascending:false}),
+    sb.from('livestock_settings').select('*').eq('id',1).maybeSingle()
+  ]);
+  allItems = itemsRes.data || [];
+  settings = settingsRes.data || null;
+  renderBanner();
+  renderChips();
+  renderGrid();
+  renderContactFab();
+}
+
+function renderBanner(){
+  const el=document.getElementById('banner');
+  if(settings && settings.banner_text){
+    el.textContent = settings.banner_text;
+    el.style.display='block';
+  }
+}
+
+function renderChips(){
+  const cats = [...new Set(allItems.map(i=>i.category).filter(Boolean))].sort();
+  const box = document.getElementById('chips');
+  box.innerHTML = '<span class="chip on" data-c="" onclick="setCategory(this,\'\')">ทั้งหมด</span>' +
+    cats.map(c=>`<span class="chip" data-c="${c}" onclick="setCategory(this,'${c}')">${c}</span>`).join('');
+}
+function setCategory(el, cat){
+  activeCategory = cat;
+  document.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));
+  el.classList.add('on');
+  renderGrid();
+}
+
+function renderGrid(){
+  const q = (document.getElementById('searchInput').value || '').toLowerCase();
+  const items = allItems.filter(i =>
+    (!activeCategory || i.category === activeCategory) &&
+    (!q || (i.name||'').toLowerCase().includes(q))
+  );
+  const content = document.getElementById('content');
+  if(!items.length){
+    content.innerHTML = '<div class="empty"><div class="big">📱</div>ไม่พบเครื่องที่ตรงกับที่ค้นหา</div>';
+    return;
+  }
+  content.innerHTML = '<div class="grid">' + items.map(i=>{
+    const photo = (i.photos && i.photos[0]) || '';
+    const isG1 = (i.grade||'').includes('1');
+    const gradeCls = isG1 ? 'g1' : 'g2';
+    const soldTag = i.sold ? '<div class="soldstamp">ขายแล้ว</div>' : '';
+    return `<div class="card" onclick="openDetail('${i.id}')">
+      <div class="ph">
+        ${photo ? `<img src="${photo}" loading="lazy">` : '<div class="noph">ไม่มีรูป</div>'}
+        ${i.grade ? `<span class="gradebadge ${gradeCls}">${i.grade}</span>` : ''}
+        ${soldTag}
+      </div>
+      <div class="cinfo">
+        <p class="cname">${i.name}</p>
+        <p class="cmeta">${i.battery ? 'แบต '+i.battery : ''}</p>
+        <p class="cprice">${baht(i.price)}</p>
+      </div>
+    </div>`;
+  }).join('') + '</div>';
+}
+
+function openDetail(id){
+  const i = allItems.find(x=>x.id===id);
+  if(!i) return;
+  const photos = (i.photos && i.photos.length) ? i.photos : [];
+  document.getElementById('detailBody').innerHTML = `
+    ${photos.length ? `<div class="photoScroll">${photos.map(p=>`<img src="${p}">`).join('')}</div>` : ''}
+    <div class="detailname">${i.name}</div>
+    <div class="detailprice">${baht(i.price)}${i.sold?' <span style="font-size:13px;color:var(--red);font-weight:700">(ขายแล้ว)</span>':''}</div>
+    <div class="detailrow"><span>สภาพเครื่อง</span><span>${i.grade||'—'}</span></div>
+    <div class="detailrow"><span>แบตเตอรี่</span><span>${i.battery||'—'}</span></div>
+    <div class="detailrow"><span>หมวดหมู่</span><span>${i.category||'—'}</span></div>
+    <div class="detailrow" style="border-bottom:none"><span>ตำหนิ/สภาพ</span><span style="text-align:right;max-width:60%">${i.condition||'ไม่มีตำหนิ สภาพสวย'}</span></div>
+  `;
+  document.getElementById('detailOverlay').classList.add('show');
+}
+function closeDetail(){document.getElementById('detailOverlay').classList.remove('show')}
+
+function renderContactFab(){
+  const fab = document.getElementById('contactFab');
+  if(!settings || !settings.contact_type || settings.contact_type==='none'){fab.style.display='none';return}
+  fab.style.display='flex';
+  if(settings.contact_type==='line'){
+    fab.innerHTML = `<a class="contactbtn" href="${settings.contact_value}" target="_blank" rel="noopener">💬 ทักไลน์สอบถามร้าน</a>`;
+  } else if(settings.contact_type==='phone'){
+    fab.innerHTML = `<a class="contactbtn" href="tel:${settings.contact_value}">📞 โทรสอบถามร้าน</a>`;
+  } else if(settings.contact_type==='qr'){
+    fab.innerHTML = `<button class="contactbtn" onclick="openQr()">📷 สแกน QR ติดต่อร้าน</button>`;
+  }
+}
+function openQr(){
+  document.getElementById('qrImg').src = settings.qr_image_url || '';
+  document.getElementById('qrOverlay').classList.add('show');
+}
+function closeQr(){document.getElementById('qrOverlay').classList.remove('show')}
+
+init();
+</script>
+</body>
+</html>
