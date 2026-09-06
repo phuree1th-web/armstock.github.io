@@ -15,7 +15,7 @@
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Sukhumvit Set","Segoe UI","Helvetica Neue",sans-serif;-webkit-font-smoothing:antialiased}
   a{color:inherit;text-decoration:none}
-  .wrap{max-width:1100px;margin:0 auto;padding:16px}
+  .wrap{max-width:1100px;margin:0 auto;padding:16px 16px 90px}
   header{position:sticky;top:0;z-index:20;background:rgba(13,12,9,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
   .headrow{display:flex;align-items:center;gap:10px;padding:12px 16px;max-width:1100px;margin:0 auto}
   .logo{width:38px;height:38px;border-radius:10px;background:var(--gold);display:flex;align-items:center;justify-content:center;color:#15130f;font-weight:700;font-size:14px;flex-shrink:0}
@@ -29,9 +29,9 @@
   .chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;margin-bottom:16px;-webkit-overflow-scrolling:touch}
   .chip{flex-shrink:0;padding:7px 16px;border-radius:999px;font-size:12.5px;font-weight:600;border:1px solid var(--line);color:var(--muted);background:var(--panel-2);cursor:pointer;white-space:nowrap}
   .chip.on{background:var(--gold);color:#15130f;border-color:var(--gold)}
-  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px;padding-bottom:100px}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;cursor:pointer;transition:transform .15s,border-color .15s}
-  .card:hover{border-color:var(--gold-dark);transform:translateY(-2px)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:16px;padding-bottom:20px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden;cursor:pointer;transition:transform .18s,border-color .18s,box-shadow .18s}
+  .card:hover{border-color:var(--gold-dark);transform:translateY(-3px);box-shadow:0 10px 24px rgba(0,0,0,.35)}
   .card .ph{aspect-ratio:1;background:var(--panel-2);position:relative;overflow:hidden}
   .card .ph img{width:100%;height:100%;object-fit:cover}
   .card .noph{width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px}
@@ -63,6 +63,14 @@
   .detailrow span:first-child{color:var(--muted)}
   .qrbox{text-align:center;padding:10px 0}
   .qrbox img{width:220px;height:220px;object-fit:cover;border-radius:14px;border:1px solid var(--line)}
+  .sectit{font-size:18px;font-weight:800;margin:8px 0 4px}
+  .sectsub{font-size:12.5px;color:var(--muted);margin:0 0 14px}
+  .revScroll{display:flex;gap:14px;overflow-x:auto;padding:4px 0 20px;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity}
+  .revcard{flex-shrink:0;width:220px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;scroll-snap-align:start}
+  .revstars{color:var(--gold-soft);font-size:13px;letter-spacing:2px;margin-bottom:8px}
+  .revtext{font-size:12.5px;line-height:1.6;color:var(--text);margin-bottom:12px;min-height:58px}
+  .revphoto{width:100%;aspect-ratio:1;object-fit:cover;border-radius:10px;margin-bottom:8px;background:var(--panel-2)}
+  .revitem{font-size:11px;color:var(--gold-soft);font-weight:600;text-align:center}
 </style>
 </head>
 <body>
@@ -85,6 +93,11 @@
   </div>
   <div id="chips" class="chips"></div>
   <div id="content"><div class="loading">กำลังโหลดสินค้า...</div></div>
+  <div id="reviewsSection" style="display:none;padding-bottom:100px">
+    <div class="sectit">⭐ รีวิวความประทับใจจากลูกค้า</div>
+    <div class="sectsub">ลูกค้าจริงที่ซื้อเครื่องจากร้านแอปเปิ้ลอาร์ม เพชรบุรี</div>
+    <div id="reviewsScroll" class="revScroll"></div>
+  </div>
 </div>
 
 <div id="contactFab" class="contactfab" style="display:none"></div>
@@ -111,21 +124,39 @@ const SB_URL='https://uqfxfridchrjumulgsgn.supabase.co';
 const SB_KEY='sb_publishable_aZ1duVee5fxkMnweuxutxw_WMHs_BJv';
 const sb=window.supabase.createClient(SB_URL,SB_KEY);
 
-let allItems=[], activeCategory='', settings=null;
+let allItems=[], activeCategory='', settings=null, allReviews=[];
 
 function baht(n){return '฿'+Math.round(n||0).toLocaleString('th-TH')}
 
 async function init(){
-  const [itemsRes, settingsRes] = await Promise.all([
+  const [itemsRes, settingsRes, reviewsRes] = await Promise.all([
     sb.from('livestock_items').select('*').eq('published',true).order('created_at',{ascending:false}),
-    sb.from('livestock_settings').select('*').eq('id',1).maybeSingle()
+    sb.from('livestock_settings').select('*').eq('id',1).maybeSingle(),
+    sb.from('livestock_reviews').select('*').eq('published',true).order('created_at',{ascending:false})
   ]);
   allItems = itemsRes.data || [];
   settings = settingsRes.data || null;
+  allReviews = reviewsRes.data || [];
   renderBanner();
   renderChips();
   renderGrid();
   renderContactFab();
+  renderReviews();
+}
+
+function renderReviews(){
+  const sec = document.getElementById('reviewsSection');
+  if(!allReviews.length){sec.style.display='none';return}
+  sec.style.display='block';
+  document.getElementById('reviewsScroll').innerHTML = allReviews.map(r=>{
+    const stars = '★'.repeat(r.rating||5) + '☆'.repeat(5-(r.rating||5));
+    return `<div class="revcard">
+      ${r.photo_url?`<img class="revphoto" src="${r.photo_url}" loading="lazy">`:''}
+      <div class="revstars">${stars}</div>
+      <div class="revtext">${r.review_text}</div>
+      ${r.item_label?`<div class="revitem">${r.item_label}</div>`:''}
+    </div>`;
+  }).join('');
 }
 
 function renderBanner(){
